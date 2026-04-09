@@ -1,5 +1,6 @@
 package com.mudit.poker.Pojos;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -8,21 +9,46 @@ import java.util.stream.Collectors;
 import lombok.Data;
 
 @Data
-public class GameState {
-    int round = 1; // 1 to 3
-    List<Card> revealedCommunityCards; // In first round 3 cards are revealed, then 1 in each further 2 rounds.
-    int totalPot = 0; // Total money poured in the pot
-    int highestCurrentBid = 0; // resets to zero in each round
-    PlayerMove lastPlayerMove;
+public class GameState implements Cloneable {
+
+    // Game MetaData
+    /**
+     * Round of a single Poker Game. Total 3 rounds.
+     * In 1st round 3 cards are revealed. Then 1 card each for next 2 rounds.
+     */
+    int round = 1;
+
+    /** First player to play in this game */
+    int firstPlayer;
+
+    /** Total money poured in the pot */
+    int totalPot = 0;
+
+    /** Highest current bid in this round. Resets to zero in new round. */
+    int highestCurrentBid = 0;
+
+    /** In first round 3 cards are revealed, then 1 in each further 2 rounds. */
+    List<Card> revealedCommunityCards;
+
+    // Player Moves Metadata
+    /**
+     * 1. playerMoves stores all moves played in all 3 rounds by all players <br>
+     * 2. playerMoves.size() = 3 = num of rounds <br>
+     * 3. playerMoves.get(0) -> Moves in round 1 in order of players playing starting
+     * from the GameState.firstPlayer <br>
+     * 4. Note: playerMoves.get(0).size() != no. of players. (A player can make more
+     * than 1 move in a round, as round finishes only if non-folded players have
+     * matched their bet)
+     */
+    List<List<PlayerMove>> playerMoves;
+
+    /** Map with key as player Id and value as GamePlayerStatus */
     Map<Integer, GamePlayerStatus> playerStatusesMap;
+
+    /** Gameplay status of all players */
     List<GamePlayerStatus> playerStatuses;
 
-    public GameState(List<Player> players) {
-        resetGameState(players);
-        playerStatuses = playerStatusesMap.values().stream().toList();
-    }
-
-    public void resetGameState(List<Player> players) {
+    public GameState(List<Player> players, int firstPlayer) {
         playerStatusesMap = players.stream().collect(
                 Collectors.toMap(
                         Player::getId,
@@ -34,19 +60,23 @@ public class GameState {
                             return playerStatus;
                         }));
 
+        playerStatuses = playerStatusesMap.values().stream().toList();
+        this.firstPlayer = firstPlayer;
+        this.playerMoves = new ArrayList<>();
     }
 
     public void resetBidsOnRoundStart() {
         playerStatusesMap.forEach((playerId, playerStatus) -> {
-            playerStatus.setCurrentRoundBid(-1);
-            playerStatus.setLastMoveType(playerStatus.getLastMoveType() == MoveType.FOLD ? MoveType.FOLD : null);
+            playerStatus.setCurrentRoundBid(null);
+            playerStatus.setLastMoveTypeInCurrentRound(
+                    playerStatus.getLastMoveTypeInCurrentRound() == MoveType.FOLD ? MoveType.FOLD : null);
         });
     }
 
     @Deprecated
     public void removeFoldedPlayersAtRoundEnd() {
         playerStatusesMap.forEach((playerId, playerStatus) -> {
-            if (playerStatus.getLastMoveType() == MoveType.FOLD) {
+            if (playerStatus.getLastMoveTypeInCurrentRound() == MoveType.FOLD) {
                 playerStatusesMap.remove(playerId);
             }
         });
