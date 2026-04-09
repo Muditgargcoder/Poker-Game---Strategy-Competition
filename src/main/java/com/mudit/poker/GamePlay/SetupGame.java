@@ -18,7 +18,7 @@ public class SetupGame {
 
     static final Set<Card> FULL_DECK = generateFull52CardDeck();
 
-    static void setupGame(List<Card> communityCards, List<Player> players) {
+    static void distributeCards(List<Card> communityCards, List<Player> players) {
         Set<Card> remainingDeck = new HashSet<>(FULL_DECK);
         communityCards.clear();
         communityCards.addAll(get5RandomCommunityCards(remainingDeck));

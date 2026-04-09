@@ -58,6 +58,7 @@ public class CombinationCalculator {
         List<Map.Entry<Player, CombinationResult>> winners = allPlayerResults;
 
         CombinationResult prevResult = allPlayerResults.get(0).getValue();
+        prevResult.setWinner(true);
         for (int i = 1; i < allPlayerResults.size(); i++) {
             CombinationResult thisResult = allPlayerResults.get(i).getValue();
             if (compareCombinations.compare(thisResult, prevResult) != 0) {
