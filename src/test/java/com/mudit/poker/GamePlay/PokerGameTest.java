@@ -282,7 +282,7 @@ class PokerGameTest {
         assertEquals(numGamesToPlay, game.gameAudit.size());
         // Check first game's audit
         var firstGameAudit = game.gameAudit.get(0);
-        assertEquals(3, firstGameAudit.size());
+        assertEquals(3, firstGameAudit.getPlayerResults().size());
     }
 
     @Test

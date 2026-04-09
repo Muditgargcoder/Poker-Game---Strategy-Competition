@@ -8,9 +8,18 @@ import lombok.Data;
 @Data
 @AllArgsConstructor
 public class GamePlayerStatus {
+    
+    /** Net money player currently has */
     Integer currentAmount;
+    
     int playerId;
-    int currentRoundBid;
+
+    /** null if player has not bid yet in this round*/
+    Integer currentRoundBid;
+
+    /** List of size 3 denoting net bids per round. Element would be Null if not bid for a round */
     List<Integer> bidsPerRound;
-    MoveType lastMoveType;
+
+    /** Last move type in current round. Null if not played yet in this round. <br> If player folded in this round, this value will be FOLD for all further rounds */
+    MoveType lastMoveTypeInCurrentRound;
 }

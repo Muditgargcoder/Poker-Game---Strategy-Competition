@@ -3,11 +3,12 @@ package com.mudit.poker.GamePlay;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
+import java.util.Optional;
 
 import com.mudit.poker.Combinations.CombinationCalculator;
 import com.mudit.poker.Pojos.Card;
 import com.mudit.poker.Pojos.CombinationResult;
+import com.mudit.poker.Pojos.GameAudit;
 import com.mudit.poker.Pojos.GamePlayerStatus;
 import com.mudit.poker.Pojos.GameResult;
 import com.mudit.poker.Pojos.GameState;
@@ -29,27 +30,36 @@ public class PokerGamePlay {
     int currentGamePlayNumber;
     GameState gameState; // currentGameState;
     List<Card> communityCards = new ArrayList<>();
-    List<List<Map.Entry<Player, CombinationResult>>> gameAudit = new ArrayList<>();
+    List<GameAudit> gameAudit = new ArrayList<>();
 
     public void run() throws Exception {
-        gameState = new GameState(players);
         for (Player player : players) {
             player.setCurrentAmount(startingMoney);
         }
         for (int i = 1; i <= NUM_GAME_PLAYS; i++) {
+            gameState = new GameState(players, firstPlayer);
             currentGamePlayNumber = i;
+
             initializeSingleGamePlay();
+
             firstPlayer = (firstPlayer + 1) % players.size();
         }
+        prettyPrintAudit();
     }
 
     void initializeSingleGamePlay() throws Exception {
-        gameState.resetGameState(players);
-        SetupGame.setupGame(communityCards, players);
+        SetupGame.distributeCards(communityCards, players);
         for (Player player : players) {
-            player.reduceMoney(FIRST_ROUND_FEE); // removed players if in a end game they have less than FIRST_ROUND_FEE
+            player.reduceMoney(FIRST_ROUND_FEE); // TODO: removed players if in a end game they have less than
+                                                 // FIRST_ROUND_FEE
         }
         gameState.setTotalPot(FIRST_ROUND_FEE * players.size());
+        runSingleGamePlay();
+        GameResult gameResult = computeWinnerAndGivePrize();
+        recordAudit(gameResult.getAllPlayerResult());
+    }
+
+    void runSingleGamePlay() throws Exception {
         int currentPlayerIdx = firstPlayer;
         for (int round = 1; round <= ROUNDS; round++) {
             updateGameRound(round);
@@ -59,33 +69,32 @@ public class PokerGamePlay {
                 if (hasPlayerFolded(currentPlayer))
                     continue;
                 PlayerMove playerMove = currentPlayer.getStrategy().makeYourMove(gameState,
-                        currentPlayer.getCurrentGameStatus());
+                        currentPlayer.getCurrentGameStatus(), currentPlayer.getAssignedCards());
                 playerMove.setPlayerId(currentPlayer.getId());
                 validatePlayerMove(currentPlayer, playerMove);
-                gameState = updateGameState(currentPlayer, playerMove);
-                notifyAllPlayers();
+                gameState = updateGameState(currentPlayer, playerMove, round);
+                notifyAllPlayers(playerMove);
                 currentPlayerIdx = (currentPlayerIdx + 1) % players.size();
             }
         }
-        computeWinnerAndGivePrize();
     }
 
     boolean isRoundFinished() {
         boolean hasEveryonePlayedOnce = gameState.getPlayerStatusesMap().values().stream()
-                .allMatch(playerStatus -> playerStatus.getLastMoveType() != null);
+                .allMatch(playerStatus -> playerStatus.getLastMoveTypeInCurrentRound() != null);
         if (!hasEveryonePlayedOnce)
             return false;
 
         boolean nonFoldedPlayersBidsMatched = gameState.getPlayerStatusesMap().values().stream()
-                .filter(playerStatus -> playerStatus.getLastMoveType() != MoveType.FOLD)
+                .filter(playerStatus -> playerStatus.getLastMoveTypeInCurrentRound() != MoveType.FOLD)
                 .allMatch(playerStatus -> playerStatus.getCurrentRoundBid() == gameState.getHighestCurrentBid());
 
         return hasEveryonePlayedOnce && nonFoldedPlayersBidsMatched;
     }
 
-    void computeWinnerAndGivePrize() {
+    GameResult computeWinnerAndGivePrize() {
         List<Player> playersTillFinalRound = players.stream().filter(p -> !hasPlayerFolded(p)).toList();
-        GameResult gameResult = CombinationCalculator.getGameResult(communityCards, playersTillFinalRound); 
+        GameResult gameResult = CombinationCalculator.getGameResult(communityCards, playersTillFinalRound);
         // Can be multiple winners with a tie
         var winners = gameResult.getWinners();
         int winMoney = gameState.getTotalPot() / winners.size();
@@ -93,16 +102,19 @@ public class PokerGamePlay {
             Player winner = entry.getKey();
             winner.addMoney(winMoney);
         }
-        recordAudit(gameResult.getAllPlayerResult());
+        return gameResult;
     }
 
-    GameState updateGameState(Player currentPlayer, PlayerMove playerMove) {
+    GameState updateGameState(Player currentPlayer, PlayerMove playerMove, int round) {
         currentPlayer.reduceMoney(playerMove.getBetAmount());
-        gameState.setLastPlayerMove(playerMove);
+        gameState.getPlayerMoves().get(round - 1).add(playerMove);
         gameState.setTotalPot(gameState.getTotalPot() + playerMove.getBetAmount());
 
         GamePlayerStatus playerStatus = gameState.getPlayerStatusesMap().get(playerMove.getPlayerId());
-        int newCurrentRoundBid = playerStatus.getCurrentRoundBid() + playerMove.getBetAmount();
+        playerStatus.setLastMoveTypeInCurrentRound(playerMove.getMoveType());
+
+        // player may have bid before in this same round
+        int newCurrentRoundBid = Optional.ofNullable(playerStatus.getCurrentRoundBid()).orElse(0) + playerMove.getBetAmount();
 
         playerStatus.getBidsPerRound().set(gameState.getRound() - 1, newCurrentRoundBid);
         gameState.setHighestCurrentBid(Math.max(gameState.getHighestCurrentBid(), newCurrentRoundBid));
@@ -120,8 +132,8 @@ public class PokerGamePlay {
         String baseError = "Invalid move by Player " + playerMove.getPlayerId() + ", ";
         MoveType moveType = playerMove.getMoveType();
         int betAmount = playerMove.getBetAmount();
-        int playerExistingBid = player.getCurrentGameStatus().getCurrentRoundBid();
-        int netCurrentBid = playerExistingBid + betAmount;
+        Integer playerExistingBid = player.getCurrentGameStatus().getCurrentRoundBid();
+        int netCurrentBid = Optional.of(playerExistingBid).orElse(0) + betAmount;
         if (moveType == MoveType.FOLD)
             return true;
         if (moveType == MoveType.CHECK) {
@@ -145,14 +157,16 @@ public class PokerGamePlay {
         return true;
     }
 
-    void notifyAllPlayers() {
+    void notifyAllPlayers(PlayerMove playerMove) {
         for (Player player : players) {
-            player.getStrategy().onNewMove(gameState, player.getCurrentGameStatus());
+            player.getStrategy().onNewMove(playerMove, gameState, player.getCurrentGameStatus(),
+                    player.getAssignedCards());
         }
     }
 
     boolean hasPlayerFolded(Player currentPlayer) {
-        return gameState.getPlayerStatusesMap().get(currentPlayer.getId()).getLastMoveType() == MoveType.FOLD;
+        return gameState.getPlayerStatusesMap().get(currentPlayer.getId())
+                .getLastMoveTypeInCurrentRound() == MoveType.FOLD;
     }
 
     void recordAudit(List<Map.Entry<Player, CombinationResult>> allPlayerResultsSorted) {
@@ -163,7 +177,8 @@ public class PokerGamePlay {
                                                                                                        // player to keep
                                                                                                        // audit.
                 }).toList();
-        gameAudit.add(combinationResultsCopy);
+        GameAudit audit = new GameAudit(combinationResultsCopy, gameState);
+        gameAudit.add(audit);
     }
 
     void prettyPrintAudit() {
