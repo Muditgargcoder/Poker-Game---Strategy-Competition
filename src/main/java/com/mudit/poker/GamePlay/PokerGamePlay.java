@@ -112,7 +112,7 @@ public class PokerGamePlay {
 
         GamePlayerStatus playerStatus = gameState.getPlayerStatusesMap().get(playerMove.getPlayerId());
         playerStatus.setLastMoveTypeInCurrentRound(playerMove.getMoveType());
-
+        
         // player may have bid before in this same round
         int newCurrentRoundBid = Optional.ofNullable(playerStatus.getCurrentRoundBid()).orElse(0) + playerMove.getBetAmount();
 
