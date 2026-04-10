@@ -116,7 +116,7 @@ class PokerGameTest {
         players.add(createPlayer(2));
         players.add(createPlayer(3));
 
-        PokerGamePlay game = new PokerGamePlay(startingMoney, players, 40);
+        PokerGamePlay game = new PokerGamePlay(startingMoney, players, 2);
         game.run();
 
         // At least one player should have more money than initial

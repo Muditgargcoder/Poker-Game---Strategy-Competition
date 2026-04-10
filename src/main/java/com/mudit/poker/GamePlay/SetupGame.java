@@ -18,11 +18,11 @@ public class SetupGame {
 
     static final Set<Card> FULL_DECK = generateFull52CardDeck();
 
-    static void distributeCards(List<Card> communityCards, List<Player> players) {
+    static List<Card> distributeCards(List<Player> players) {
         Set<Card> remainingDeck = new HashSet<>(FULL_DECK);
-        communityCards.clear();
-        communityCards.addAll(get5RandomCommunityCards(remainingDeck));
+        List<Card> communityCards = get5RandomCommunityCards(remainingDeck);
         assignPlayersNewCards(players, remainingDeck);
+        return communityCards;
     }
 
     public static void assignPlayersNewCards(List<Player> players, Set<Card> remainingDeck) {

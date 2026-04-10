@@ -25,7 +25,7 @@ public class GameState implements Cloneable {
     int totalPot = 0;
 
     /** Highest current bid in this round. Resets to zero in new round. */
-    int highestCurrentBid = 0;
+    Integer highestCurrentBid = 0;
 
     /** In first round 3 cards are revealed, then 1 in each further 2 rounds. */
     List<Card> revealedCommunityCards;
@@ -40,7 +40,7 @@ public class GameState implements Cloneable {
      * than 1 move in a round, as round finishes only if non-folded players have
      * matched their bet)
      */
-    List<List<PlayerMove>> playerMoves;
+    List<List<PlayerMove>> playerMoves = new ArrayList<>();
 
     /** Map with key as player Id and value as GamePlayerStatus */
     Map<Integer, GamePlayerStatus> playerStatusesMap;
@@ -62,7 +62,9 @@ public class GameState implements Cloneable {
 
         playerStatuses = playerStatusesMap.values().stream().toList();
         this.firstPlayer = firstPlayer;
-        this.playerMoves = new ArrayList<>();
+        for (int i = 0; i < 3; i++) {
+            this.playerMoves.add(new ArrayList<>());
+        }
     }
 
     public void resetBidsOnRoundStart() {

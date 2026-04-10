@@ -1,6 +1,7 @@
 package com.mudit.poker.Algos.Mudit;
 
 import java.util.List;
+import java.util.Optional;
 
 import com.mudit.poker.Algos.PlayerStrategy;
 import com.mudit.poker.Pojos.Card;
@@ -14,7 +15,7 @@ public class MuditStrategy implements PlayerStrategy {
     @Override
     public PlayerMove makeYourMove(GameState gameState, GamePlayerStatus myStatus, List<Card> myCards) {
         int myPlayerId = myStatus.getPlayerId();
-        int myCurrentBid = myStatus.getCurrentRoundBid();
+        int myCurrentBid = Optional.ofNullable(myStatus.getCurrentRoundBid()).orElse(0);
         int currentHighestBid = gameState.getHighestCurrentBid();
         Double averageBidsOfOtherPlayers = gameState.getPlayerStatuses().stream().mapToInt(player -> player.getCurrentRoundBid()).average().orElse(0);
         return new PlayerMove(MoveType.RAISE, (currentHighestBid - myCurrentBid) + averageBidsOfOtherPlayers.intValue());

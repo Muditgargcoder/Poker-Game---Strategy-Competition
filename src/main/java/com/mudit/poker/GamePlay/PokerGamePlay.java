@@ -48,7 +48,7 @@ public class PokerGamePlay {
     }
 
     void initializeSingleGamePlay() throws Exception {
-        SetupGame.distributeCards(communityCards, players);
+        communityCards = SetupGame.distributeCards(players);
         for (Player player : players) {
             player.reduceMoney(FIRST_ROUND_FEE); // TODO: removed players if in a end game they have less than
                                                  // FIRST_ROUND_FEE
@@ -64,7 +64,7 @@ public class PokerGamePlay {
         for (int round = 1; round <= ROUNDS; round++) {
             updateGameRound(round);
             // 3 cards revealed in first round, then 1 card for next 2 rounds each
-            while (isRoundFinished()) { // untill all players play atleast once and bids matches
+            while (!isRoundFinished()) { // untill all players play atleast once and bids matches
                 Player currentPlayer = players.get(currentPlayerIdx);
                 if (hasPlayerFolded(currentPlayer))
                     continue;
@@ -116,6 +116,7 @@ public class PokerGamePlay {
         // player may have bid before in this same round
         int newCurrentRoundBid = Optional.ofNullable(playerStatus.getCurrentRoundBid()).orElse(0) + playerMove.getBetAmount();
 
+        playerStatus.setCurrentRoundBid(newCurrentRoundBid);
         playerStatus.getBidsPerRound().set(gameState.getRound() - 1, newCurrentRoundBid);
         gameState.setHighestCurrentBid(Math.max(gameState.getHighestCurrentBid(), newCurrentRoundBid));
         return gameState;
@@ -133,7 +134,7 @@ public class PokerGamePlay {
         MoveType moveType = playerMove.getMoveType();
         int betAmount = playerMove.getBetAmount();
         Integer playerExistingBid = player.getCurrentGameStatus().getCurrentRoundBid();
-        int netCurrentBid = Optional.of(playerExistingBid).orElse(0) + betAmount;
+        int netCurrentBid = Optional.ofNullable(playerExistingBid).orElse(0) + betAmount;
         if (moveType == MoveType.FOLD)
             return true;
         if (moveType == MoveType.CHECK) {
