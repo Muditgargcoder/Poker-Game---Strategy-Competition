@@ -81,9 +81,9 @@ public class GameAuditPrinter {
      */
     private static void printGameIntro(GameState gameState) {
         System.out.println("\n┌─ GAME STATUS ─────────────────────────────────┐");
-        System.out.printf("│ First Player ID: %3d                           │%n", gameState.getFirstPlayer());
-        System.out.printf("│ Total Rounds: 3 (Pre-flop, Flop, Turn+River) │%n");
-        System.out.printf("│ Initial Pot: $0                               │%n");
+        System.out.printf("│ First Player ID: %3d                          │%n", gameState.getFirstPlayer());
+        System.out.printf("│ Total Rounds: 3 (Pre-flop, Flop, Turn+River)  │%n");
+        System.out.printf("│ Initial Pot: $0                              │%n");
         System.out.println("└──────────────────────────────────────────────┘");
     }
 
