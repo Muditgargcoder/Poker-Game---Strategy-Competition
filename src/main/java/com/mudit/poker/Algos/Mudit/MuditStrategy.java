@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Optional;
 
 import com.mudit.poker.Pojos.Card;
+import com.mudit.poker.Pojos.GameResult;
 import com.mudit.poker.Pojos.MoveType;
 import com.mudit.poker.Pojos.PlayerMove;
 import com.mudit.poker.UserInterfaces.GamePlayerStatusInfo;
@@ -26,4 +27,8 @@ public class MuditStrategy implements PlayerStrategy {
         
     }
 
+    @Override
+    public void onSingleGameEnd(GameResult gameResult) {
+        return;
+    }
 }

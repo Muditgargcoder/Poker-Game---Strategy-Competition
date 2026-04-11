@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Scanner;
 
 import com.mudit.poker.Pojos.Card;
+import com.mudit.poker.Pojos.GameResult;
 import com.mudit.poker.Pojos.MoveType;
 import com.mudit.poker.Pojos.PlayerMove;
 import com.mudit.poker.UserInterfaces.GamePlayerStatusInfo;
@@ -34,6 +35,11 @@ public class ManualPlayStrategy implements PlayerStrategy {
     public void onNewMove(PlayerMove otherPlayerMove, GameStateInfo newGameState, GamePlayerStatusInfo myStatus,
             List<Card> myCards) {
         // Optional: Can be used to update the player's knowledge of the game state
+    }
+
+    @Override
+    public void onSingleGameEnd(GameResult gameResult) {
+        return;
     }
 
     /**

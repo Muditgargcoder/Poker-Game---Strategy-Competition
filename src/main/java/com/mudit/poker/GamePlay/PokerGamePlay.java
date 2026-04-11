@@ -57,12 +57,13 @@ public class PokerGamePlay {
         gameState.setTotalPot(FIRST_ROUND_FEE * players.size());
         runSingleGamePlay();
         GameResult gameResult = computeWinnerAndGivePrize();
+        notifyAllPlayers(gameResult);
         recordAudit(gameResult.getAllPlayerResult());
     }
 
     void runSingleGamePlay() throws Exception {
-        int currentPlayerIdx = firstPlayer;
         for (int round = 1; round <= ROUNDS; round++) {
+            int currentPlayerIdx = firstPlayer;
             updateGameRound(round);
             // 3 cards revealed in first round, then 1 card for next 2 rounds each
             while (!isRoundFinished()) { // untill all players play atleast once and bids matches
@@ -159,10 +160,15 @@ public class PokerGamePlay {
         return true;
     }
 
-    void notifyAllPlayers(PlayerMove playerMove) {
+    void notifyAllPlayers(PlayerMove playerMove) throws CloneNotSupportedException {
         for (Player player : players) {
-            player.getStrategy().onNewMove(playerMove, gameState, player.getCurrentGameStatus(),
-                    player.getAssignedCards());
+            player.getStrategy().onNewMove(playerMove.clone(), gameState.clone(), player.getCurrentGameStatus().clone(), player.getAssignedCards());
+        }
+    }
+
+    void notifyAllPlayers(GameResult gameResult) {
+        for (Player player : players) {
+            player.getStrategy().onSingleGameEnd(gameResult);
         }
     }
 
