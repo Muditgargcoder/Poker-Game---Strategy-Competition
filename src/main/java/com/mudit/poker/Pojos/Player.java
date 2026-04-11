@@ -2,7 +2,7 @@ package com.mudit.poker.Pojos;
 
 import java.util.List;
 
-import com.mudit.poker.Algos.PlayerStrategy;
+import com.mudit.poker.UserInterfaces.PlayerStrategy;
 
 import lombok.Data;
 
@@ -22,7 +22,7 @@ public class Player {
     public Player(int id, int intialAmount, List<Card> assignedCards) {
         this.id = id;
         this.currentAmount = intialAmount;
-        this.assignedCards = assignedCards;
+        this.assignedCards = assignedCards.stream().toList(); // immutable
     }
 
     public boolean reduceMoney(int amount) {

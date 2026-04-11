@@ -1,5 +1,6 @@
 package com.mudit.poker.GamePlay;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -35,7 +36,7 @@ public class GameAuditPrinter {
         System.out.println(THICK_LINE);
 
         // Print game-by-game results with play-by-play
-        printGameByGamePlayByPlay(gameAudit);
+        printGameByGamePlayByPlay(gameAudit, startingMoney);
 
         // Print final standings
         printFinalTournamentStandings(gameAudit, startingMoney);
@@ -48,11 +49,14 @@ public class GameAuditPrinter {
     /**
      * Print detailed play-by-play for each game
      */
-    private static void printGameByGamePlayByPlay(List<GameAudit> gameAudit) {
+    private static void printGameByGamePlayByPlay(List<GameAudit> gameAudit, int startingMoney) {
         for (int gameNum = 0; gameNum < gameAudit.size(); gameNum++) {
             GameAudit audit = gameAudit.get(gameNum);
             GameState gameState = audit.getGameState();
             List<Map.Entry<Player, CombinationResult>> gameResult = audit.getPlayerResults();
+            
+            // Extract players from game result
+            List<Player> players = gameResult.stream().map(Map.Entry::getKey).toList();
 
             System.out.println("\n" + THIN_LINE);
             printCentered("🎮 GAME " + (gameNum + 1) + " - PLAY BY PLAY REPLAY 🎮", 140);
@@ -61,11 +65,14 @@ public class GameAuditPrinter {
             // Game intro
             printGameIntro(gameState);
 
+            // Show player hole cards
+            printPlayerHoleCards(gameResult);
+
             // Play-by-play for each round
-            printRoundByRoundReplay(gameState);
+            printRoundByRoundReplay(gameState, players);
 
             // Final results
-            printGameResults(gameResult, gameNum + 1);
+            printGameResults(gameResult, gameNum + 1, startingMoney);
         }
     }
 
@@ -81,9 +88,33 @@ public class GameAuditPrinter {
     }
 
     /**
+     * Print hole cards for each player
+     */
+    private static void printPlayerHoleCards(List<Map.Entry<Player, CombinationResult>> gameResult) {
+        System.out.println("\n🎴 PLAYER HOLE CARDS AT GAME START:");
+        for (Player player : gameResult.stream().map(Map.Entry::getKey).toList()) {
+            System.out.printf("   Player %d: %s%n", player.getId(), formatSimpleHoleCards(player.getAssignedCards()));
+        }
+        System.out.println();
+    }
+
+    /**
+     * Format player's hole cards as simple array
+     */
+    private static String formatPlayerHoleCards(List<Card> assignedCards) {
+        if (assignedCards == null || assignedCards.isEmpty()) {
+            return "";
+        }
+        return "[" + assignedCards.stream()
+                .map(card -> formatCardRank(card.getRank()) + formatSuit(card.getSuite()))
+                .reduce((a, b) -> a + ", " + b)
+                .orElse("") + "]";
+    }
+
+    /**
      * Print round-by-round replay with all moves
      */
-    private static void printRoundByRoundReplay(GameState gameState) {
+    private static void printRoundByRoundReplay(GameState gameState, List<Player> players) {
         List<List<PlayerMove>> allMoves = gameState.getPlayerMoves();
         List<Card> communityCards = gameState.getRevealedCommunityCards();
 
@@ -120,9 +151,18 @@ public class GameAuditPrinter {
                     String moveIcon = getMoveIcon(move.getMoveType());
                     String moveType = move.getMoveType().toString();
                     roundPot += move.getBetAmount();
+                    
+                    // Find player to get their cards
+                    String cardsDisplay = "";
+                    for (Player player : players) {
+                        if (player.getId() == move.getPlayerId()) {
+                            cardsDisplay = formatSimpleHoleCards(player.getAssignedCards());
+                            break;
+                        }
+                    }
 
-                    System.out.printf("  %2d. Player %-3d: %s %-6s Bet: $%-4d │ Pot: $%-6d%n",
-                            moveCounter, move.getPlayerId(), moveIcon, moveType,
+                    System.out.printf("  %2d. Player %-3d [%s]: %s %-6s Bet: $%-4d │ Pot: $%-6d%n",
+                            moveCounter, move.getPlayerId(), cardsDisplay, moveIcon, moveType,
                             move.getBetAmount(), roundPot);
                     moveCounter++;
                 }
@@ -135,13 +175,13 @@ public class GameAuditPrinter {
     /**
      * Print final game results with rankings
      */
-    private static void printGameResults(List<Map.Entry<Player, CombinationResult>> gameResult, int gameNum) {
+    private static void printGameResults(List<Map.Entry<Player, CombinationResult>> gameResult, int gameNum, int startingMoney) {
         System.out.println("\n" + THIN_LINE);
         System.out.printf("║ %-138s ║%n", String.format("GAME %d - FINAL RESULTS & WINNER", gameNum));
         System.out.println(THIN_LINE);
 
-        System.out.printf("║ %-8s │ %-12s │ %-15s │ %-50s │ %-30s ║%n",
-                "RANK", "PLAYER ID", "RESULT", "AMOUNT", "HAND");
+        System.out.printf("║ %-8s │ %-15s │ %-35s │ %-15s │ %-12s │ %-10s ║%n",
+                "RANK", "PLAYER ID", "HAND", "HOLE CARDS", "AMOUNT", "CHANGE");
         System.out.println(SEPARATOR);
 
         for (int rank = 0; rank < gameResult.size(); rank++) {
@@ -150,19 +190,66 @@ public class GameAuditPrinter {
             CombinationResult result = entry.getValue();
 
             String rankStr = formatRank(rank + 1);
-            String playerId = String.valueOf(player.getId());
-            String resultStr = (rank == 0) ? "🏆 WINNER 🏆" : (rank == gameResult.size() - 1) ? "Last Place" : "Still In";
+            String playerIdStr = result.isWinner() ? player.getId() + " 🏆" : String.valueOf(player.getId());
             String amount = String.format("$%,d", player.getCurrentAmount());
-            String combination = result.getCombination().toString();
+            
+            // Calculate change in money
+            int change = player.getCurrentAmount() - startingMoney;
+            String changeStr = (change >= 0 ? "+" : "-") + String.format("$%,d", Math.abs(change));
+            
+            // Combine combination name with cards
+            String combinationName = result.getCombination().toString();
             String cards = formatCards(result.getHighCards());
+            String handStr = combinationName + " | " + cards;
+            String holeCards = formatPlayerHoleCards(player.getAssignedCards());
 
-            String handStr = String.format("%s | %s", combination, cards);
-
-            System.out.printf("║ %-8s │ %-12s │ %-15s │ %-50s │ %-30s ║%n",
-                    rankStr, playerId, resultStr, amount,
-                    handStr.length() > 30 ? handStr.substring(0, 27) + "..." : handStr);
+            System.out.printf("║ %-8s │ %-15s │ %-35s │ %-15s │ %-12s │ %-10s ║%n",
+                    rankStr, playerIdStr,
+                    handStr.length() > 35 ? handStr.substring(0, 32) + "..." : handStr,
+                    holeCards.length() > 15 ? holeCards.substring(0, 12) + "..." : holeCards,
+                    amount,
+                    changeStr);
         }
         System.out.println(THIN_LINE);
+    }
+
+    /**
+     * Format simple hole cards representation (compact form)
+     */
+    private static String formatSimpleHoleCards(List<Card> cards) {
+        if (cards == null || cards.size() < 2) {
+            return "--";
+        }
+        StringBuilder sb = new StringBuilder();
+        for (Card card : cards) {
+            sb.append(formatCard(card)).append(" ");
+        }
+        return sb.toString().trim();
+    }
+
+    /**
+     * Format card rank for display (2-10, J, Q, K, A)
+     */
+    private static String formatCardRank(int rank) {
+        return switch (rank) {
+            case 11 -> "J";
+            case 12 -> "Q";
+            case 13 -> "K";
+            case 14 -> "A";
+            default -> String.valueOf(rank);
+        };
+    }
+
+    /**
+     * Format suit symbol
+     */
+    private static String formatSuit(Suite suite) {
+        return switch (suite) {
+            case Heart -> "♥";
+            case Diamond -> "♦";
+            case Club -> "♣";
+            case Spade -> "♠";
+        };
     }
 
     /**
@@ -199,7 +286,7 @@ public class GameAuditPrinter {
             String startingAmountStr = String.format("$%,d", startingMoney);
 
             int profitLoss = finalAmount - startingMoney;
-            String profitLossStr = (profitLoss >= 0 ? "+" : "") + String.format("$%,d", profitLoss);
+            String profitLossStr = (profitLoss >= 0 ? "+" : "-") + String.format("$%,d", Math.abs(profitLoss));
             double changePercent = (double) profitLoss / startingMoney * 100;
             String changePercentStr = String.format("%+.1f%%", changePercent);
             String statusIcon = profitLoss >= 0 ? "✓" : "✗";
@@ -244,17 +331,17 @@ public class GameAuditPrinter {
                 .mapToInt(e -> e.getKey().getCurrentAmount() - startingMoney)
                 .sum();
 
-        System.out.printf("│ 🎮 Total Games Played:        %-37d │%n", totalGames);
-        System.out.printf("│ 👥 Total Players:             %-37d │%n", sortedPlayers.size());
-        System.out.printf("│ ✓ Players with Profit:        %-37d │%n", winnerCount);
-        System.out.printf("│ ✗ Players with Loss:          %-37d │%n", loserCount);
-        System.out.printf("│ ↔ Players Breaking Even:      %-37d │%n", breakEvenCount);
+        System.out.printf("│ 🎮 Total Games Played:        %3d                          │%n", totalGames);
+        System.out.printf("│ 👥 Total Players:             %3d                          │%n", sortedPlayers.size());
+        System.out.printf("│ ✓ Players with Profit:       %3d                           │%n", winnerCount);
+        System.out.printf("│ ✗ Players with Loss:         %3d                           │%n", loserCount);
+        System.out.printf("│ ↔ Players Breaking Even:     %3d                           │%n", breakEvenCount);
         System.out.println("├────────────────────────────────────────────────────────────┤");
-        System.out.printf("│ 🏆 Biggest Winner:  Player %d with +$%,7d       │%n", biggestWinner.getKey().getId(),
+        System.out.printf("│ 🏆 Biggest Winner:  Player %d with +$%-6d                 │%n", biggestWinner.getKey().getId(),
                 biggestWinnerProfit);
-        System.out.printf("│ 💸 Biggest Loser:   Player %d with -$%,7d       │%n", biggestLoser.getKey().getId(),
+        System.out.printf("│ 💸 Biggest Loser:   Player %d with -$%-6d                 │%n", biggestLoser.getKey().getId(),
                 biggestLoserLoss);
-        System.out.printf("│ 💰 Total Movement:            +$%,35d │%n", totalProfit);
+        System.out.printf("│ 💰 Total Movement:  +$%-6d                               │%n", totalProfit);
         System.out.println("└────────────────────────────────────────────────────────────┘");
     }
 
@@ -343,7 +430,7 @@ public class GameAuditPrinter {
      */
     private static void printCentered(String text, int width) {
         int padding = (width - text.length() - 4) / 2;
-        System.out.printf("║ %" + (padding + text.length()) + "s %" + (width - padding - text.length() - 4)
+        System.out.printf("║ %" + (padding + text.length()) + "s %" + (width - padding - text.length() - 5)
                 + "s ║%n", text, "");
     }
 }
