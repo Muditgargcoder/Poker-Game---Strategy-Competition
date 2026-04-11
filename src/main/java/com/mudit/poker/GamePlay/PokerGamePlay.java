@@ -88,7 +88,7 @@ public class PokerGamePlay {
 
         boolean nonFoldedPlayersBidsMatched = gameState.getPlayerStatusesMap().values().stream()
                 .filter(playerStatus -> playerStatus.getLastMoveTypeInCurrentRound() != MoveType.FOLD)
-                .allMatch(playerStatus -> playerStatus.getCurrentRoundBid() == gameState.getHighestCurrentBid());
+                .allMatch(playerStatus -> playerStatus.getCurrentRoundBid().equals(gameState.getHighestCurrentBid()));
 
         return hasEveryonePlayedOnce && nonFoldedPlayersBidsMatched;
     }
@@ -134,7 +134,7 @@ public class PokerGamePlay {
         String baseError = "Invalid move by Player " + playerMove.getPlayerId() + ", ";
         MoveType moveType = playerMove.getMoveType();
         int betAmount = playerMove.getBetAmount();
-        Integer playerExistingBid = Optional.ofNullable(player.getCurrentGameStatus().getCurrentRoundBid()).orElse(0);
+        int playerExistingBid = Optional.ofNullable(player.getCurrentGameStatus().getCurrentRoundBid()).orElse(0);
         int netCurrentBid = playerExistingBid + betAmount;
         int currentHighestBid = Optional.ofNullable(gameState.getHighestCurrentBid()).orElse(0);
         if (moveType == MoveType.FOLD)

@@ -130,7 +130,7 @@ public class CombinationCalculator {
      * @param cards [D1, H4, D2, D4, C4, D3, D5] (size = 7)
      * @return [D5, D4, D3, D2, D1]
      */
-    static List<Card> checkFlush(List<Card> cards) {
+    public static List<Card> checkFlush(List<Card> cards) {
         List<Card> sameSuitCards = cards.stream()
                 .collect(Collectors.groupingBy(Card::getSuite, Collectors.toList()))
                 .values().stream()
@@ -146,7 +146,7 @@ public class CombinationCalculator {
      * @param cards [1, 2, 1, 4, 3, 1, 3] (size = 7)
      * @return [[1, 1, 1], [3, 3], [4], [2]]
      */
-    static List<List<Card>> getCardsListByDecreasingFrequency(List<Card> cards) {
+    public static List<List<Card>> getCardsListByDecreasingFrequency(List<Card> cards) {
         return cards.stream().collect(Collectors.groupingBy(Card::getRank))
                 .values().stream().sorted((a, b) -> {
                     int compare = -Integer.compare(a.size(), b.size());
@@ -162,7 +162,7 @@ public class CombinationCalculator {
      * @param cards [2, 7, 8, 5, 9, 10, 6]
      * @return [10, 9, 8, 7, 6]
      */
-    static List<Card> checkStraight(List<Card> cards) {
+    public static List<Card> checkStraight(List<Card> cards) {
         Collections.sort(cards);
         int counter = 1;
         int startIdx = 0;
@@ -179,7 +179,7 @@ public class CombinationCalculator {
         return null;
     }
 
-    static List<Card> getFirstNCardsAfterIdxK(List<Card> cards, int k, int n) {
+    public static List<Card> getFirstNCardsAfterIdxK(List<Card> cards, int k, int n) {
         return (new ArrayList<>(cards.subList(k, 7))).stream().sorted().limit(n).toList();
     }
 }
