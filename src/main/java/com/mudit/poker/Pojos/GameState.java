@@ -2,14 +2,17 @@ package com.mudit.poker.Pojos;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import com.mudit.poker.UserInterfaces.GameStateInfo;
+
 import lombok.Data;
 
 @Data
-public class GameState implements Cloneable {
+public class GameState implements GameStateInfo, Cloneable {
 
     // Game MetaData
     /**
@@ -82,5 +85,17 @@ public class GameState implements Cloneable {
                 playerStatusesMap.remove(playerId);
             }
         });
+    }
+
+    @Override
+    public GameState clone() throws CloneNotSupportedException {
+        GameState clone = (GameState) super.clone();
+        clone.playerMoves = this.playerMoves.stream().map(round -> round.stream().map(PlayerMove::clone).toList()).toList();
+        clone.playerStatusesMap = new HashMap<>();
+        this.playerStatusesMap.forEach((x, y) -> {
+            clone.playerStatusesMap.put(x, y.clone());
+        });
+        clone.playerStatuses = clone.playerStatusesMap.values().stream().map(x -> x).toList();
+        return clone;
     }
 }

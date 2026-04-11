@@ -1,6 +1,7 @@
 package com.mudit.poker.GamePlay;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -68,8 +69,7 @@ public class PokerGamePlay {
                 Player currentPlayer = players.get(currentPlayerIdx);
                 if (hasPlayerFolded(currentPlayer))
                     continue;
-                PlayerMove playerMove = currentPlayer.getStrategy().makeYourMove(gameState,
-                        currentPlayer.getCurrentGameStatus(), currentPlayer.getAssignedCards());
+                PlayerMove playerMove = currentPlayer.getStrategy().makeYourMove(gameState.clone(), currentPlayer.getCurrentGameStatus().clone(), currentPlayer.getAssignedCards());
                 playerMove.setPlayerId(currentPlayer.getId());
                 validatePlayerMove(currentPlayer, playerMove);
                 gameState = updateGameState(currentPlayer, playerMove, round);
@@ -126,32 +126,33 @@ public class PokerGamePlay {
         gameState.setRound(round);
         gameState.setHighestCurrentBid(0);
         gameState.resetBidsOnRoundStart();
-        gameState.setRevealedCommunityCards(communityCards.subList(0, 3 + (round - 1)));
+        gameState.setRevealedCommunityCards(Collections.unmodifiableList(communityCards.subList(0, 3 + (round - 1))));
     }
 
     boolean validatePlayerMove(Player player, PlayerMove playerMove) throws Exception {
         String baseError = "Invalid move by Player " + playerMove.getPlayerId() + ", ";
         MoveType moveType = playerMove.getMoveType();
         int betAmount = playerMove.getBetAmount();
-        Integer playerExistingBid = player.getCurrentGameStatus().getCurrentRoundBid();
-        int netCurrentBid = Optional.ofNullable(playerExistingBid).orElse(0) + betAmount;
+        Integer playerExistingBid = Optional.ofNullable(player.getCurrentGameStatus().getCurrentRoundBid()).orElse(0);
+        int netCurrentBid = playerExistingBid + betAmount;
+        int currentHighestBid = Optional.ofNullable(gameState.getHighestCurrentBid()).orElse(0);
         if (moveType == MoveType.FOLD)
             return true;
         if (moveType == MoveType.CHECK) {
             if (betAmount != 0)
                 throw new Exception(baseError + "Can't bet an amount > 0 with CHECK");
-            if (playerExistingBid != gameState.getHighestCurrentBid()) {
+            if (playerExistingBid != currentHighestBid) {
                 throw new Exception(baseError + "Can't CHECK, player bid doesn't matches highest bid");
             }
         }
         if (moveType == MoveType.RAISE) {
             // if (betAmount == 0)
             // throw new Exception(baseError + "Can't RAISE with 0 bet");
-            if (netCurrentBid < gameState.getHighestCurrentBid())
+            if (netCurrentBid < currentHighestBid)
                 throw new Exception(baseError + "Player bet after RAISE needs to exceed current highest bid");
         }
         if (moveType == MoveType.CALL) {
-            if (netCurrentBid != gameState.getHighestCurrentBid())
+            if (netCurrentBid != currentHighestBid)
                 throw new Exception(baseError + "CALL needs to match the current highest bid");
         }
 
@@ -174,9 +175,8 @@ public class PokerGamePlay {
         List<Map.Entry<Player, CombinationResult>> combinationResultsCopy = allPlayerResultsSorted.stream()
                 .map(e -> {
                     Player p = e.getKey();
-                    return Map.entry(new Player(p.getId(), p.getCurrentAmount(), null), e.getValue()); // making copy of
-                                                                                                       // player to keep
-                                                                                                       // audit.
+                    // making copy of player to keep audit.
+                    return Map.entry(new Player(p.getId(), p.getCurrentAmount(), p.getAssignedCards()), e.getValue());
                 }).toList();
         GameAudit audit = new GameAudit(combinationResultsCopy, gameState);
         gameAudit.add(audit);

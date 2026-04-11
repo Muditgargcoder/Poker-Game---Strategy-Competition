@@ -6,8 +6,8 @@ import lombok.Data;
 
 @Data
 public class Card implements Comparable<Card> {
-    final Suite suite;
-    final int rank;
+    final private Suite suite;
+    final private int rank;
 
     @Override
     public int compareTo(Card other) {
