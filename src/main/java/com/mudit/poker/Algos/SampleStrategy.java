@@ -2,6 +2,7 @@ package com.mudit.poker.Algos;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.HashMap;
 
 import com.mudit.poker.Pojos.Card;
 import com.mudit.poker.Pojos.GameResult;
@@ -22,6 +23,11 @@ public class SampleStrategy implements PlayerStrategy {
 
     @Override
     public void onNewMove(PlayerMove otherPlayerMove, GameStateInfo newGameState, GamePlayerStatusInfo myStatus, List<Card> myCards) {
+        
+    }
+
+    @Override
+    public void onSingleGameStart(HashMap<Integer, Integer> moneyOnPlayers) {
         
     }
 

@@ -2,6 +2,7 @@ package com.mudit.poker.Algos;
 
 import java.util.List;
 import java.util.Scanner;
+import java.util.HashMap;
 
 import com.mudit.poker.Pojos.Card;
 import com.mudit.poker.Pojos.GameResult;
@@ -35,6 +36,11 @@ public class ManualPlayStrategy implements PlayerStrategy {
     public void onNewMove(PlayerMove otherPlayerMove, GameStateInfo newGameState, GamePlayerStatusInfo myStatus,
             List<Card> myCards) {
         // Optional: Can be used to update the player's knowledge of the game state
+    }
+
+    @Override
+    public void onSingleGameStart(HashMap<Integer, Integer> moneyOnPlayers) {
+        return;
     }
 
     @Override
@@ -214,4 +220,3 @@ public class ManualPlayStrategy implements PlayerStrategy {
         System.out.println("║" + " ".repeat(padding) + text + " ".repeat(width - padding - text.length()) + "║");
     }
 }
-
