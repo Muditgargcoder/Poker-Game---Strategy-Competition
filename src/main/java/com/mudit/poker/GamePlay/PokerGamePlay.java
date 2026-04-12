@@ -2,6 +2,7 @@ package com.mudit.poker.GamePlay;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -41,6 +42,7 @@ public class PokerGamePlay {
             gameState = new GameState(players, firstPlayer);
             currentGamePlayNumber = i;
 
+            notifyAllPlayersOnSingleGameStart();
             initializeSingleGamePlay();
 
             firstPlayer = (firstPlayer + 1) % players.size();
@@ -169,6 +171,16 @@ public class PokerGamePlay {
     void notifyAllPlayers(GameResult gameResult) {
         for (Player player : players) {
             player.getStrategy().onSingleGameEnd(gameResult);
+        }
+    }
+
+    void notifyAllPlayersOnSingleGameStart() {
+        HashMap<Integer, Integer> moneyOnPlayers = new HashMap<>();
+        for (Player player : players) {
+            moneyOnPlayers.put(player.getId(), Integer.valueOf(player.getCurrentAmount()));
+        }
+        for (Player player : players) {
+            player.getStrategy().onSingleGameStart(new HashMap<>(moneyOnPlayers));
         }
     }
 
