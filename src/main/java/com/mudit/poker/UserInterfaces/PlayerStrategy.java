@@ -1,6 +1,7 @@
 package com.mudit.poker.UserInterfaces;
 
 import java.util.List;
+import java.util.HashMap;
 
 import com.mudit.poker.Pojos.Card;
 import com.mudit.poker.Pojos.GamePlayerStatus;
@@ -24,6 +25,13 @@ public interface PlayerStrategy {
      * This function is invoked when any player completes a turn (including yourself)
      */
     void onNewMove(PlayerMove otherPlayerMove, GameStateInfo newGameState, GamePlayerStatusInfo myStatus, List<Card> myCards);
+
+    /**
+     * This function is invoked before each game starts.
+     * @param moneyOnPlayers key -> playerId, value -> current amount for that player.
+     *                       Values are passed as copied snapshot values.
+     */
+    void onSingleGameStart(HashMap<Integer, Integer> moneyOnPlayers);
 
     /**
      * @param gameResult Stores 

@@ -97,6 +97,12 @@ public class YourNameStrategy implements PlayerStrategy {
     }
 
     @Override
+    public void onSingleGameStart(HashMap<Integer, Integer> moneyOnPlayers) {
+        // Called before each single game starts
+        // moneyOnPlayers contains playerId -> current amount
+    }
+
+    @Override
     public void onSingleGameEnd(GameResult gameResult) {
         // Called when a single game ends
         // Used for post-game analysis (don't modify the result)
@@ -108,7 +114,7 @@ public class YourNameStrategy implements PlayerStrategy {
 
 ## PlayerStrategy Interface Details
 
-The `PlayerStrategy` interface has three core methods:
+The `PlayerStrategy` interface has four core methods:
 
 ### 1. `makeYourMove()`
 
@@ -150,7 +156,17 @@ void onNewMove(PlayerMove otherPlayerMove, GameStateInfo newGameState, GamePlaye
 
 **Use Case**: Update your strategy based on opponent behavior, track patterns, etc.
 
-### 3. `onSingleGameEnd()`
+### 3. `onSingleGameStart()`
+
+```java
+void onSingleGameStart(HashMap<Integer, Integer> moneyOnPlayers)
+```
+
+**Called**: Before each single game starts
+
+**Use Case**: Initialize per-game state and review all players' current money before the game begins
+
+### 4. `onSingleGameEnd()`
 
 ```java
 void onSingleGameEnd(GameResult gameResult)
